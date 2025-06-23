@@ -1,8 +1,8 @@
 import { ChatOpenAI, OpenAIEmbeddings } from "@langchain/openai"
-import { MemoryVectorStore } from "langchain/vectorstores/memory"
 import { ChatPromptTemplate } from "@langchain/core/prompts"
 import { PDFLoader } from "@langchain/community/document_loaders/fs/pdf"
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter"
+import { Chroma } from "@langchain/community/vectorstores/chroma"
 
 const model = new ChatOpenAI({
   modelName: "gpt-4o",
@@ -25,8 +25,14 @@ const main = async () => {
   const splitedDocs = await splitter.splitDocuments(docs)
 
   // Store the data
-  const vectorStore = new MemoryVectorStore(new OpenAIEmbeddings())
-  await vectorStore.addDocuments(splitedDocs)
+  const vectorStore = await Chroma.fromDocuments(
+    splitedDocs,
+    new OpenAIEmbeddings(),
+    {
+      collectionName: "books",
+      url: "http://localhost:8000", // ChromaDB server URL
+    }
+  )
 
   // Create data retriever
   const retriever = vectorStore.asRetriever({
@@ -58,4 +64,4 @@ const main = async () => {
   // "Gone with the Wind" explores themes of race, class, and gender.
 }
 
-// main()
+main()
