@@ -1,28 +1,33 @@
 import { ChatOpenAI, OpenAIEmbeddings } from "@langchain/openai"
 import { MemoryVectorStore } from "langchain/vectorstores/memory"
-import { Document } from "@langchain/core/documents"
 import { ChatPromptTemplate } from "@langchain/core/prompts"
+import { CheerioWebBaseLoader } from "@langchain/community/document_loaders/web/cheerio"
+import { RecursiveCharacterTextSplitter } from "langchain/text_splitter"
 
 const model = new ChatOpenAI({
   modelName: "gpt-4o",
   temperature: 0.7,
 })
 
-const myData = [
-  "My name is John.",
-  "My name is Bob.",
-  "My favorite food is pizza.",
-  "My favorite food is pasta.",
-]
-
-const question = "What are my favorite foods?"
+const question = "What are langchain libraries?"
 
 const main = async () => {
+  // Create the loader
+  const loader = new CheerioWebBaseLoader(
+    "https://js.langchain.com/docs/introduction"
+  )
+  const docs = await loader.load()
+
+  // Split the docs
+  const splitter = new RecursiveCharacterTextSplitter({
+    chunkSize: 200,
+    chunkOverlap: 20,
+  })
+  const splitedDocs = await splitter.splitDocuments(docs)
+
   // Store the data
   const vectorStore = new MemoryVectorStore(new OpenAIEmbeddings())
-  await vectorStore.addDocuments(
-    myData.map((content) => new Document({ pageContent: content }))
-  )
+  await vectorStore.addDocuments(splitedDocs)
 
   // Create data retriever
   const retriever = vectorStore.asRetriever({
@@ -30,8 +35,8 @@ const main = async () => {
   })
 
   // Get relevant documents
-  const docs = await retriever._getRelevantDocuments(question)
-  const resultDocs = docs.map((doc) => doc.pageContent)
+  const relevantDocs = await retriever._getRelevantDocuments(question)
+  const resultDocs = relevantDocs.map((doc) => doc.pageContent)
 
   // Build template
   const template = ChatPromptTemplate.fromMessages([
@@ -51,7 +56,7 @@ const main = async () => {
   })
 
   console.log(response.content)
-  // Your favorite foods are pizza and pasta.
+  // LangChain libraries are open-source components that form part of the LangChain framework.
 }
 
 // main()

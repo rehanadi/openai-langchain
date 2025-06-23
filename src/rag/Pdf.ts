@@ -1,28 +1,32 @@
 import { ChatOpenAI, OpenAIEmbeddings } from "@langchain/openai"
 import { MemoryVectorStore } from "langchain/vectorstores/memory"
-import { Document } from "@langchain/core/documents"
 import { ChatPromptTemplate } from "@langchain/core/prompts"
+import { PDFLoader } from "@langchain/community/document_loaders/fs/pdf"
+import { RecursiveCharacterTextSplitter } from "langchain/text_splitter"
 
 const model = new ChatOpenAI({
   modelName: "gpt-4o",
   temperature: 0.7,
 })
 
-const myData = [
-  "My name is John.",
-  "My name is Bob.",
-  "My favorite food is pizza.",
-  "My favorite food is pasta.",
-]
-
-const question = "What are my favorite foods?"
+const question = "What themes does Gone with the Wind explore?"
 
 const main = async () => {
+  // Create the loader
+  const loader = new PDFLoader("public/documents/books.pdf", {
+    splitPages: false,
+  })
+  const docs = await loader.load()
+
+  // Split the docs
+  const splitter = new RecursiveCharacterTextSplitter({
+    separators: [`. \n`],
+  })
+  const splitedDocs = await splitter.splitDocuments(docs)
+
   // Store the data
   const vectorStore = new MemoryVectorStore(new OpenAIEmbeddings())
-  await vectorStore.addDocuments(
-    myData.map((content) => new Document({ pageContent: content }))
-  )
+  await vectorStore.addDocuments(splitedDocs)
 
   // Create data retriever
   const retriever = vectorStore.asRetriever({
@@ -30,8 +34,8 @@ const main = async () => {
   })
 
   // Get relevant documents
-  const docs = await retriever._getRelevantDocuments(question)
-  const resultDocs = docs.map((doc) => doc.pageContent)
+  const relevantDocs = await retriever._getRelevantDocuments(question)
+  const resultDocs = relevantDocs.map((doc) => doc.pageContent)
 
   // Build template
   const template = ChatPromptTemplate.fromMessages([
@@ -51,7 +55,7 @@ const main = async () => {
   })
 
   console.log(response.content)
-  // Your favorite foods are pizza and pasta.
+  // "Gone with the Wind" explores themes of race, class, and gender.
 }
 
-// main()
+main()
