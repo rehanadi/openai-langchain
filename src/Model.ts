@@ -11,11 +11,9 @@ const main = async () => {
   // 1. invoke
   // const response1 = await model.invoke("Give me 4 good books to read")
   // console.log(response1.content)
-
   // 2. batch
   // const response2 = await model.batch(["Hello", "Give me 4 good books to read"])
   // console.log(response2)
-
   // 3. stream
   // const response3 = await model.stream("Give me 4 good books to read")
   // for await (const chunk of response3) {
@@ -23,4 +21,4 @@ const main = async () => {
   // }
 }
 
-main()
+// main()
